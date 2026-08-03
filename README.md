@@ -71,26 +71,30 @@ curl http://localhost:8080/actuator/health
 
 ## Endpoints
 
-| Método | Rota                     | Descrição                                              |
-|--------|--------------------------|---------------------------------------------------------|
-| POST   | `/payments`               | Cria um pagamento (status inicial `PENDING`)            |
-| GET    | `/payments/{id}`          | Consulta o status atual do pagamento                    |
-| GET    | `/payments/{id}/events`   | Consulta o histórico de eventos (auditoria) do pagamento |
+| Método | Rota                        | Descrição                                                |
+|--------|-----------------------------|-----------------------------------------------------------|
+| POST   | `/pagamentos`                | Cria um pagamento (status inicial `PENDENTE`)             |
+| GET    | `/pagamentos/{id}`           | Consulta o status atual do pagamento                      |
+| GET    | `/pagamentos/{id}/eventos`   | Consulta o histórico de eventos (auditoria) do pagamento  |
 
 ### Exemplo — criar pagamento
 
 ```bash
-curl -X POST http://localhost:8080/payments \
+curl -X POST http://localhost:8080/pagamentos \
   -H "Content-Type: application/json" \
   -d '{
-    "amount": 150.00,
-    "currency": "BRL",
+    "valor": 150.00,
+    "moeda": "BRL",
     "gateway": "stripe",
-    "idempotencyKey": "pedido-123"
+    "chaveIdempotencia": "pedido-123"
   }'
 ```
 
-`gateway` aceita `stripe` ou `pagseguro`. O status evolui de forma assíncrona: `PENDING` → `PROCESSING` → `CONFIRMED` ou `FAILED`.
+`gateway` aceita `stripe` ou `pagseguro`. O status evolui de forma assíncrona: `PENDENTE` → `PROCESSANDO` → `CONFIRMADO` ou `FALHOU`.
+
+### Collection do Postman
+
+Em `postman/` há uma collection (`payment-processor.postman_collection.json`) e um environment (`payment-processor.postman_environment.json`) prontos para importar — já com os fluxos de criação, consulta e os casos de erro (conflito de idempotência, gateway desconhecido, validação).
 
 ## Configuração
 

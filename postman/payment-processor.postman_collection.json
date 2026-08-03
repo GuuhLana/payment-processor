@@ -1,0 +1,275 @@
+{
+  "info": {
+    "_postman_id": "b3f1e1a0-6b3b-4a5c-9c1f-payment-processor",
+    "name": "Payment Processor (Simulado)",
+    "description": "Collection para testar o processador de pagamentos simulado. Fluxo sugerido: 1) rode uma requisição da pasta \"1. Criar Pagamento\" (ela guarda o id retornado na variável de ambiente idPagamento) 2) consulte o status e os eventos na pasta \"2. Consultas\" 3) explore os casos de erro na pasta \"3. Casos de Erro\".",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Criar Pagamento",
+      "item": [
+        {
+          "name": "Criar Pagamento - Stripe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Pagamento criado (201)\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    const corpo = pm.response.json();",
+                  "    pm.environment.set(\"idPagamento\", corpo.id);",
+                  "    pm.test(\"Status inicial e PENDENTE\", function () {",
+                  "        pm.expect(corpo.status).to.eql(\"PENDENTE\");",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"valor\": 150.00,\n  \"moeda\": \"BRL\",\n  \"gateway\": \"stripe\",\n  \"chaveIdempotencia\": \"{{$guid}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pagamentos",
+              "host": ["{{baseUrl}}"],
+              "path": ["pagamentos"]
+            },
+            "description": "Cria um pagamento usando o gateway simulado Stripe. A chaveIdempotencia usa {{$guid}}, uma variável dinâmica do Postman que gera um valor novo a cada envio — assim dá pra rodar várias vezes sem conflito. O id da resposta é salvo automaticamente na variável idPagamento para usar nas próximas requisições."
+          }
+        },
+        {
+          "name": "Criar Pagamento - PagSeguro",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Pagamento criado (201)\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    const corpo = pm.response.json();",
+                  "    pm.environment.set(\"idPagamento\", corpo.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"valor\": 75.50,\n  \"moeda\": \"BRL\",\n  \"gateway\": \"pagseguro\",\n  \"chaveIdempotencia\": \"{{$guid}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pagamentos",
+              "host": ["{{baseUrl}}"],
+              "path": ["pagamentos"]
+            },
+            "description": "Mesma coisa, usando o gateway simulado PagSeguro (Strategy/Adapter diferente)."
+          }
+        },
+        {
+          "name": "Criar Pagamento - Chave Fixa (para testar idempotência)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "    const corpo = pm.response.json();",
+                  "    pm.environment.set(\"idPagamento\", corpo.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"valor\": 300.00,\n  \"moeda\": \"BRL\",\n  \"gateway\": \"stripe\",\n  \"chaveIdempotencia\": \"{{chaveIdempotenciaFixa}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pagamentos",
+              "host": ["{{baseUrl}}"],
+              "path": ["pagamentos"]
+            },
+            "description": "Usa a chave fixa da variável chaveIdempotenciaFixa (em vez de uma gerada na hora). Envie esta requisição duas vezes seguidas: na primeira, cria o pagamento (201); na segunda, recebe de volta o MESMO pagamento em vez de criar um novo — essa é a idempotência funcionando."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Consultas",
+      "item": [
+        {
+          "name": "Buscar Pagamento por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pagamentos/{{idPagamento}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["pagamentos", "{{idPagamento}}"]
+            },
+            "description": "Consulta o status atual do pagamento. Como o processamento é assíncrono, o status evolui de PENDENTE -> PROCESSANDO -> CONFIRMADO ou FALHOU; rode de novo alguns segundos depois de criar o pagamento para ver a mudança."
+          }
+        },
+        {
+          "name": "Buscar Eventos do Pagamento (auditoria)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pagamentos/{{idPagamento}}/eventos",
+              "host": ["{{baseUrl}}"],
+              "path": ["pagamentos", "{{idPagamento}}", "eventos"]
+            },
+            "description": "Retorna a trilha de auditoria completa (mini event sourcing): PAGAMENTO_SOLICITADO, PAGAMENTO_PROCESSANDO e o resultado final."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Casos de Erro",
+      "item": [
+        {
+          "name": "Conflito de Idempotência (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Retorna 409 Conflict\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"valor\": 999.00,\n  \"moeda\": \"BRL\",\n  \"gateway\": \"stripe\",\n  \"chaveIdempotencia\": \"{{chaveIdempotenciaFixa}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pagamentos",
+              "host": ["{{baseUrl}}"],
+              "path": ["pagamentos"]
+            },
+            "description": "Reusa a mesma chaveIdempotenciaFixa da pasta 1, mas com um valor diferente. Rode a requisição \"Criar Pagamento - Chave Fixa\" pelo menos uma vez antes desta, para a chave já existir com outro valor."
+          }
+        },
+        {
+          "name": "Gateway Desconhecido (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Retorna 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"valor\": 50.00,\n  \"moeda\": \"BRL\",\n  \"gateway\": \"picpay\",\n  \"chaveIdempotencia\": \"{{$guid}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pagamentos",
+              "host": ["{{baseUrl}}"],
+              "path": ["pagamentos"]
+            },
+            "description": "Gateway inexistente (só stripe e pagseguro estão implementados) é rejeitado na hora, com 400, antes mesmo de entrar na fila."
+          }
+        },
+        {
+          "name": "Valor Inválido (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Retorna 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"valor\": -10,\n  \"moeda\": \"BRL\",\n  \"gateway\": \"stripe\",\n  \"chaveIdempotencia\": \"{{$guid}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pagamentos",
+              "host": ["{{baseUrl}}"],
+              "path": ["pagamentos"]
+            },
+            "description": "Valor negativo/zero é rejeitado pela validação de Bean Validation (@Positive)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Actuator - Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/actuator/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["actuator", "health"]
+        },
+        "description": "Confirma que a aplicação subiu e está de pé."
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "idPagamento", "value": "", "type": "string" },
+    { "key": "chaveIdempotenciaFixa", "value": "pedido-teste-001", "type": "string" }
+  ]
+}

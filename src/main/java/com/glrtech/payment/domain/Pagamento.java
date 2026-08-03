@@ -19,48 +19,48 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "payments")
+@Table(name = "pagamentos")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Payment {
+public class Pagamento {
 
     @Id
     private UUID id;
 
     @Column(nullable = false)
-    private BigDecimal amount;
+    private BigDecimal valor;
 
     @Column(nullable = false)
-    private String currency;
+    private String moeda;
 
     @Column(nullable = false)
     private String gateway;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PaymentStatus status;
+    private StatusPagamento status;
 
-    @Column(name = "idempotency_key", nullable = false, unique = true)
-    private String idempotencyKey;
+    @Column(name = "chave_idempotencia", nullable = false, unique = true)
+    private String chaveIdempotencia;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    private Instant criadoEm;
 
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+    @Column(name = "atualizado_em", nullable = false)
+    private Instant atualizadoEm;
 
     @PrePersist
-    void onCreate() {
-        Instant now = Instant.now();
-        createdAt = now;
-        updatedAt = now;
+    void aoCriar() {
+        Instant agora = Instant.now();
+        criadoEm = agora;
+        atualizadoEm = agora;
     }
 
     @PreUpdate
-    void onUpdate() {
-        updatedAt = Instant.now();
+    void aoAtualizar() {
+        atualizadoEm = Instant.now();
     }
 }

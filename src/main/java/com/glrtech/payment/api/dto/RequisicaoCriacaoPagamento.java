@@ -6,9 +6,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
-public record CreatePaymentRequest(
-        @NotNull @Positive BigDecimal amount,
-        @NotBlank String currency,
+public record RequisicaoCriacaoPagamento(
+        @NotNull @Positive BigDecimal valor,
+        @NotBlank String moeda,
         @NotBlank String gateway,
-        @NotBlank String idempotencyKey) {
+        @NotBlank String chaveIdempotencia) {
 }

@@ -19,37 +19,37 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Append-only audit trail of every status transition a payment goes through.
- * Reconstructing payment_events for a given paymentId gives the full history (mini event sourcing).
+ * Trilha de auditoria (append-only) de cada transição de estado de um pagamento.
+ * Reconstruir os eventos de um pagamentoId dá o histórico completo (mini event sourcing).
  */
 @Entity
-@Table(name = "payment_events")
+@Table(name = "eventos_pagamento")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PaymentEvent {
+public class EventoPagamento {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "payment_id", nullable = false)
-    private UUID paymentId;
+    @Column(name = "pagamento_id", nullable = false)
+    private UUID pagamentoId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "event_type", nullable = false)
-    private PaymentEventType eventType;
+    @Column(name = "tipo_evento", nullable = false)
+    private TipoEventoPagamento tipoEvento;
 
     @Column(nullable = false, columnDefinition = "text")
-    private String details;
+    private String detalhes;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    private Instant criadoEm;
 
     @PrePersist
-    void onCreate() {
-        createdAt = Instant.now();
+    void aoCriar() {
+        criadoEm = Instant.now();
     }
 }

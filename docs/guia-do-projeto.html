@@ -1,0 +1,1326 @@
+<title>Payment Processor — Guia do Projeto</title>
+<style>
+  :root {
+    --paper:      #E9ECEE;
+    --surface:    #FAFBFC;
+    --surface-2:  #F1F4F6;
+    --ink:        #10161D;
+    --ink-soft:   #55606B;
+    --ink-faint:  #838D97;
+    --accent:     #35408C;
+    --accent-soft:#E3E6F4;
+    --rule:       #C8D0D6;
+    --rule-soft:  #DCE2E7;
+
+    --st-pend:    #7F5A00;  --st-pend-bg: #F6EAD1;
+    --st-proc:    #005C64;  --st-proc-bg: #D6EBEE;
+    --st-conf:    #1B5F34;  --st-conf-bg: #D9EBDF;
+    --st-fail:    #94271F;  --st-fail-bg: #F4DDDB;
+
+    --font-display: Charter, "Bitstream Charter", "Iowan Old Style", Georgia, "Times New Roman", serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, "Cascadia Mono", "Cascadia Code", Consolas, "SF Mono", "Roboto Mono", monospace;
+
+    --step: clamp(0.9rem, 0.3rem + 1.2vw, 1.4rem);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      #0E1216;
+      --surface:    #161B21;
+      --surface-2:  #1B2129;
+      --ink:        #E2E7EB;
+      --ink-soft:   #98A3AE;
+      --ink-faint:  #6C7883;
+      --accent:     #9AA6F0;
+      --accent-soft:#1D2340;
+      --rule:       #29313A;
+      --rule-soft:  #202730;
+
+      --st-pend:    #E0B263;  --st-pend-bg: #322710;
+      --st-proc:    #67C7D0;  --st-proc-bg: #0F2C30;
+      --st-conf:    #7FC998;  --st-conf-bg: #122E20;
+      --st-fail:    #EC9891;  --st-fail-bg: #331A18;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:      #0E1216;
+    --surface:    #161B21;
+    --surface-2:  #1B2129;
+    --ink:        #E2E7EB;
+    --ink-soft:   #98A3AE;
+    --ink-faint:  #6C7883;
+    --accent:     #9AA6F0;
+    --accent-soft:#1D2340;
+    --rule:       #29313A;
+    --rule-soft:  #202730;
+
+    --st-pend:    #E0B263;  --st-pend-bg: #322710;
+    --st-proc:    #67C7D0;  --st-proc-bg: #0F2C30;
+    --st-conf:    #7FC998;  --st-conf-bg: #122E20;
+    --st-fail:    #EC9891;  --st-fail-bg: #331A18;
+  }
+
+  :root[data-theme="light"] {
+    --paper:      #E9ECEE;
+    --surface:    #FAFBFC;
+    --surface-2:  #F1F4F6;
+    --ink:        #10161D;
+    --ink-soft:   #55606B;
+    --ink-faint:  #838D97;
+    --accent:     #35408C;
+    --accent-soft:#E3E6F4;
+    --rule:       #C8D0D6;
+    --rule-soft:  #DCE2E7;
+
+    --st-pend:    #7F5A00;  --st-pend-bg: #F6EAD1;
+    --st-proc:    #005C64;  --st-proc-bg: #D6EBEE;
+    --st-conf:    #1B5F34;  --st-conf-bg: #D9EBDF;
+    --st-fail:    #94271F;  --st-fail-bg: #F4DDDB;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--accent); }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  code, kbd, pre, .mono { font-family: var(--font-mono); }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    border-bottom: 1px solid var(--rule);
+    background: var(--surface);
+  }
+
+  .masthead-inner {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 5vw, 4.5rem) clamp(1.25rem, 4vw, 3rem) clamp(2rem, 3.5vw, 3rem);
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0;
+  }
+
+  .masthead h1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.1rem, 1rem + 3.6vw, 3.6rem);
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    margin: 0;
+    max-width: 20ch;
+  }
+
+  .lede {
+    margin: 0;
+    max-width: 62ch;
+    font-size: clamp(1.02rem, 0.95rem + 0.3vw, 1.18rem);
+    color: var(--ink-soft);
+  }
+
+  .stack-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+  }
+
+  .stack-chips span {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.02em;
+    color: var(--ink-soft);
+    border: 1px solid var(--rule);
+    background: var(--surface-2);
+    padding: 0.24rem 0.55rem;
+    border-radius: 3px;
+  }
+
+  /* ---------- shell / toc ---------- */
+
+  .shell {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 clamp(1.25rem, 4vw, 3rem);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+
+  .toc { display: none; }
+
+  @media (min-width: 1040px) {
+    .shell {
+      grid-template-columns: 15rem minmax(0, 1fr);
+      align-items: start;
+      gap: 4rem;
+    }
+    .toc {
+      display: block;
+      position: sticky;
+      top: 2rem;
+      padding: 2.75rem 0;
+      border-right: 1px solid var(--rule-soft);
+      padding-right: 1.5rem;
+    }
+  }
+
+  .toc p {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 0.9rem;
+  }
+
+  .toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    counter-reset: toc;
+  }
+
+  .toc a {
+    text-decoration: none;
+    color: var(--ink-soft);
+    font-size: 0.87rem;
+    display: block;
+    line-height: 1.35;
+    transition: color 120ms ease;
+  }
+
+  .toc a::before {
+    counter-increment: toc;
+    content: counter(toc) ".";
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    margin-right: 0.5rem;
+  }
+
+  .toc a:hover { color: var(--accent); }
+
+  /* ---------- document ---------- */
+
+  .doc {
+    padding: clamp(2.25rem, 4vw, 3.25rem) 0 4rem;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(2.75rem, 5vw, 4.25rem);
+    min-width: 0;
+  }
+
+  .doc section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    scroll-margin-top: 1.5rem;
+    min-width: 0;
+  }
+
+  .doc h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 1.1rem + 1.2vw, 2.05rem);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin: 0;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .doc h3 {
+    font-family: var(--font-body);
+    font-size: 1.02rem;
+    font-weight: 650;
+    letter-spacing: 0.005em;
+    margin: 0.7rem 0 0;
+  }
+
+  .doc p {
+    margin: 0;
+    max-width: 70ch;
+  }
+
+  .doc ul {
+    margin: 0;
+    padding-left: 1.15rem;
+    max-width: 70ch;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .doc li::marker { color: var(--ink-faint); }
+
+  .doc p code, .doc li code, .doc td code, .toc code {
+    font-size: 0.855em;
+    background: var(--surface-2);
+    border: 1px solid var(--rule-soft);
+    border-radius: 3px;
+    padding: 0.08em 0.34em;
+    white-space: nowrap;
+  }
+
+  /* ---------- pipeline diagram ---------- */
+
+  .pipe-wrap { overflow-x: auto; padding-bottom: 0.4rem; }
+
+  .pipe {
+    display: grid;
+    grid-template-columns: auto auto auto;
+    align-items: center;
+    gap: 0.5rem 0.9rem;
+    min-width: 34rem;
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+  }
+
+  .pipe .node {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.5rem 0.7rem;
+    white-space: nowrap;
+  }
+
+  .pipe .node b {
+    display: block;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .pipe .node span { color: var(--ink-faint); font-size: 0.92em; }
+
+  .pipe .arrow {
+    color: var(--ink-faint);
+    text-align: center;
+    font-size: 0.95rem;
+  }
+
+  .pipe .key { color: var(--accent); }
+
+  .pipe .node.dlq { border-style: dashed; border-color: var(--st-fail); }
+  .pipe .node.dlq b { color: var(--st-fail); }
+
+  /* ---------- flow spine ---------- */
+
+  .phase {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 0.6rem;
+  }
+
+  .phase-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+  }
+
+  .phase-tag {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--surface);
+    background: var(--accent);
+    padding: 0.22rem 0.55rem;
+    border-radius: 3px;
+  }
+
+  .phase-note {
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+  }
+
+  .spine {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 2.4rem;
+    border-left: 1px solid var(--rule);
+    display: flex;
+    flex-direction: column;
+    gap: 1.6rem;
+    counter-reset: none;
+  }
+
+  .spine > li {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  .spine > li::before {
+    content: attr(data-step);
+    position: absolute;
+    left: -2.4rem;
+    top: 0.05rem;
+    transform: translateX(-50%);
+    width: 1.55rem;
+    height: 1.55rem;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+  }
+
+  .spine .call {
+    font-family: var(--font-mono);
+    font-size: 0.83rem;
+    font-weight: 600;
+    color: var(--accent);
+    word-break: break-word;
+  }
+
+  .spine p { font-size: 0.95rem; }
+
+  .why {
+    font-size: 0.87rem;
+    color: var(--ink-soft);
+    border-left: 2px solid var(--rule);
+    padding-left: 0.75rem;
+    margin-top: 0.15rem;
+    max-width: 68ch;
+  }
+
+  .why b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- callout ---------- */
+
+  .callout {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 1.1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .callout .callout-title {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0;
+  }
+
+  .callout p { font-size: 0.94rem; }
+
+  /* ---------- concept blocks ---------- */
+
+  .concepts {
+    display: flex;
+    flex-direction: column;
+    gap: 1.6rem;
+  }
+
+  .concept {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-top: 1.3rem;
+    border-top: 1px solid var(--rule-soft);
+  }
+
+  .concept:first-child { padding-top: 0.3rem; border-top: 0; }
+
+  .concept h3 { margin: 0; }
+
+  .concept .pair {
+    display: grid;
+    gap: 0.55rem 1.4rem;
+    grid-template-columns: 1fr;
+    margin-top: 0.2rem;
+  }
+
+  @media (min-width: 720px) {
+    .concept .pair { grid-template-columns: 1fr 1fr; }
+  }
+
+  .concept .pair > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .concept .pair span {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .concept .pair p { font-size: 0.93rem; }
+
+  /* ---------- status chips ---------- */
+
+  .states-wrap { overflow-x: auto; padding-bottom: 0.4rem; }
+
+  .states {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 33rem;
+  }
+
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 0.73rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 0.32rem 0.66rem;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .chip.pend { color: var(--st-pend); background: var(--st-pend-bg); }
+  .chip.proc { color: var(--st-proc); background: var(--st-proc-bg); }
+  .chip.conf { color: var(--st-conf); background: var(--st-conf-bg); }
+  .chip.fail { color: var(--st-fail); background: var(--st-fail-bg); }
+
+  .states .sep { color: var(--ink-faint); font-size: 0.9rem; }
+
+  .states .branch {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  /* ---------- tables ---------- */
+
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: var(--surface);
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 33rem;
+    font-size: 0.88rem;
+  }
+
+  thead th {
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 500;
+    padding: 0.7rem 0.9rem;
+    border-bottom: 1px solid var(--rule);
+    background: var(--surface-2);
+    white-space: nowrap;
+  }
+
+  tbody td {
+    padding: 0.62rem 0.9rem;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+    font-variant-numeric: tabular-nums;
+  }
+
+  tbody tr:last-child td { border-bottom: 0; }
+
+  td.cls {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  td.verb {
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+
+  /* ---------- code ---------- */
+
+  pre {
+    margin: 0;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.95rem 1.1rem;
+    overflow-x: auto;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--ink);
+  }
+
+  pre .cm { color: var(--ink-faint); }
+
+  /* ---------- glossary ---------- */
+
+  .glossary {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .glossary div {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.15rem 1.5rem;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  @media (min-width: 680px) {
+    .glossary div { grid-template-columns: 11rem minmax(0, 1fr); }
+  }
+
+  .glossary dt, .glossary div > b {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .glossary div > p { font-size: 0.92rem; color: var(--ink-soft); }
+
+  /* ---------- footer ---------- */
+
+  .colophon {
+    border-top: 1px solid var(--rule);
+    background: var(--surface);
+    margin-top: 2rem;
+  }
+
+  .colophon div {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 1.6rem clamp(1.25rem, 4vw, 3rem);
+    font-family: var(--font-mono);
+    font-size: 0.73rem;
+    color: var(--ink-faint);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+    html { scroll-behavior: auto; }
+  }
+
+  html { scroll-behavior: smooth; }
+</style>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <p class="eyebrow">Guia de leitura do código &middot; projeto de estudo</p>
+    <h1>Processador de Pagamentos</h1>
+    <p class="lede">
+      Uma API que recebe pedidos de cobrança, processa cada um em segundo plano contra um
+      gateway simulado e guarda o histórico completo de tudo que aconteceu. Este guia percorre
+      o projeto na ordem em que o código executa — do <code>POST</code> até a última linha
+      gravada na auditoria.
+    </p>
+    <div class="stack-chips">
+      <span>Java 25</span>
+      <span>Spring Boot 4.1</span>
+      <span>PostgreSQL</span>
+      <span>RabbitMQ</span>
+      <span>JPA / Hibernate</span>
+      <span>Maven</span>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="toc" aria-label="Índice">
+    <p>Índice</p>
+    <ol>
+      <li><a href="#problema">O problema que o projeto resolve</a></li>
+      <li><a href="#camadas">O mapa: as camadas</a></li>
+      <li><a href="#infra">Por onde a mensagem viaja</a></li>
+      <li><a href="#fluxo">O fluxo completo, passo a passo</a></li>
+      <li><a href="#conceitos">Os cinco conceitos-chave</a></li>
+      <li><a href="#estados">Os estados de um pagamento</a></li>
+      <li><a href="#classes">Mapa das classes</a></li>
+      <li><a href="#endpoints">Endpoints da API</a></li>
+      <li><a href="#rodar">Como rodar</a></li>
+      <li><a href="#glossario">Glossário</a></li>
+    </ol>
+  </nav>
+
+  <main class="doc">
+
+    <section id="problema">
+      <h2>O problema que o projeto resolve</h2>
+      <p>
+        Cobrar no cartão parece simples: chega o pedido, cobra, responde. Na prática, três
+        coisas atrapalham — e cada uma delas explica uma parte da arquitetura deste projeto.
+      </p>
+      <ul>
+        <li>
+          <b>Cobrar é lento.</b> Uma chamada a um gateway real leva de centenas de milissegundos
+          a vários segundos. Se a API esperasse por isso, o usuário ficaria travado na tela e o
+          servidor ficaria com conexões paradas sem fazer nada.
+        </li>
+        <li>
+          <b>Cobrar é arriscado.</b> Se o cliente clicar duas vezes, ou a rede cair e o app
+          reenviar o pedido, você não pode cobrar duas vezes a mesma pessoa. Precisa existir um
+          jeito de dizer <i>"esta é a mesma cobrança de antes, não faça de novo"</i>.
+        </li>
+        <li>
+          <b>Cobrar precisa ser explicável.</b> Quando alguém pergunta "por que essa cobrança
+          falhou?", saber só o status atual não basta. É preciso o histórico: quando entrou,
+          quando foi para o gateway, o que o gateway respondeu e quando.
+        </li>
+      </ul>
+      <p>
+        As respostas do projeto para os três, nessa ordem: <b>processamento assíncrono via fila</b>,
+        <b>chave de idempotência</b> e <b>tabela de eventos de auditoria</b>. Todo o resto do
+        código existe para sustentar essas três decisões.
+      </p>
+    </section>
+
+    <section id="camadas">
+      <h2>O mapa: as camadas</h2>
+      <p>
+        O código está dividido em pacotes por responsabilidade. A regra que vale para todos: as
+        camadas de fora conhecem as de dentro, nunca o contrário. O
+        <code>domain</code> não sabe que existe HTTP, nem RabbitMQ, nem Stripe.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Pacote</th><th>Responsabilidade</th><th>Não faz</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="cls">api</td>
+              <td>Traduz HTTP para chamadas de método. Recebe JSON, valida formato, devolve JSON e o código de status.</td>
+              <td>Nenhuma regra de negócio.</td>
+            </tr>
+            <tr>
+              <td class="cls">service</td>
+              <td>As regras de negócio. Decide se cria, se repete ou se rejeita um pagamento, e dispara o evento na fila.</td>
+              <td>Não conhece HTTP nem SQL.</td>
+            </tr>
+            <tr>
+              <td class="cls">domain</td>
+              <td>O que um pagamento <i>é</i>: seus campos, seus estados possíveis, seu histórico.</td>
+              <td>Não conhece gateway, fila ou API.</td>
+            </tr>
+            <tr>
+              <td class="cls">repository</td>
+              <td>Acesso ao banco. Interfaces do Spring Data — o SQL é gerado a partir do nome do método.</td>
+              <td>Não decide nada.</td>
+            </tr>
+            <tr>
+              <td class="cls">gateway</td>
+              <td>A conversa com os provedores de pagamento. Uma interface e várias implementações simuladas.</td>
+              <td>Não grava no banco.</td>
+            </tr>
+            <tr>
+              <td class="cls">messaging</td>
+              <td>Publica e consome eventos no RabbitMQ. É onde o trabalho assíncrono acontece.</td>
+              <td>Não expõe nada por HTTP.</td>
+            </tr>
+            <tr>
+              <td class="cls">exception</td>
+              <td>Erros de negócio e a tradução deles para códigos HTTP, num só lugar.</td>
+              <td>—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <p class="callout-title">Por que separar assim</p>
+        <p>
+          Porque cada motivo de mudança fica isolado. Trocar Postgres por outro banco mexe só em
+          <code>repository</code>. Adicionar um gateway novo mexe só em <code>gateway</code>.
+          Mudar a rota da API mexe só em <code>api</code>. Se tudo estivesse numa classe só,
+          qualquer uma dessas mudanças arriscaria quebrar as outras.
+        </p>
+      </div>
+    </section>
+
+    <section id="infra">
+      <h2>Por onde a mensagem viaja</h2>
+      <p>
+        Antes do passo a passo, vale ver o caminho físico. No RabbitMQ, quem publica nunca fala
+        com uma fila diretamente: publica em um <i>exchange</i> com uma <i>routing key</i>, e o
+        exchange decide em quais filas aquilo cai. Esta é a topologia montada por
+        <code>ConfiguracaoRabbitMQ</code>:
+      </p>
+      <div class="pipe-wrap">
+        <div class="pipe">
+          <div class="node"><b>payments.exchange</b><span>topic exchange</span></div>
+          <div class="arrow">→ <span class="key mono">payment.requested</span> →</div>
+          <div class="node"><b>payment.requested.queue</b><span>OuvintePagamentoSolicitado</span></div>
+
+          <div class="node"><b>payments.exchange</b><span>topic exchange</span></div>
+          <div class="arrow">→ <span class="key mono">payment.confirmed</span> →</div>
+          <div class="node"><b>payment.confirmed.queue</b><span>OuvinteResultadoPagamento</span></div>
+
+          <div class="node"><b>payments.exchange</b><span>topic exchange</span></div>
+          <div class="arrow">→ <span class="key mono">payment.failed</span> →</div>
+          <div class="node"><b>payment.failed.queue</b><span>OuvinteResultadoPagamento</span></div>
+
+          <div class="node dlq"><b>payments.dlx</b><span>após 3 retentativas</span></div>
+          <div class="arrow">→ <span class="key mono">payment.requested.dlq</span> →</div>
+          <div class="node dlq"><b>payment.requested.dlq</b><span>ninguém consome — inspeção manual</span></div>
+        </div>
+      </div>
+      <p>
+        Os nomes ficaram em inglês de propósito: <i>exchange</i>, <i>queue</i>, <i>routing key</i>
+        e <i>DLQ</i> são o vocabulário padrão do protocolo AMQP, usado em inglês mesmo em
+        documentação brasileira.
+      </p>
+    </section>
+
+    <section id="fluxo">
+      <h2>O fluxo completo, passo a passo</h2>
+      <p>
+        Aqui está a viagem de um único pagamento pelo sistema. A divisão em duas fases é a coisa
+        mais importante desta página: a <b>fase síncrona</b> é o que acontece enquanto o Postman
+        ainda está esperando a resposta; a <b>fase assíncrona</b> é o que acontece depois, sozinho,
+        quando o cliente já foi embora.
+      </p>
+
+      <div class="phase">
+        <div class="phase-head">
+          <span class="phase-tag">Fase 1 · síncrona</span>
+          <span class="phase-note">o cliente está esperando &middot; alvo: poucos milissegundos</span>
+        </div>
+        <ol class="spine">
+          <li data-step="1">
+            <span class="call">ControladorPagamento.criar()</span>
+            <p>
+              Recebe o <code>POST /pagamentos</code>. A anotação <code>@Valid</code> checa o
+              formato do corpo antes do método rodar: valor precisa existir e ser positivo, e
+              moeda, gateway e chave não podem vir em branco.
+            </p>
+            <p class="why">
+              <b>Se falhar aqui:</b> nem chega ao service. O <code>ManipuladorGlobalDeExcecoes</code>
+              intercepta e devolve <code>400</code> com o campo que deu problema.
+            </p>
+          </li>
+          <li data-step="2">
+            <span class="call">ServicoPagamento.criarPagamento() → ResolvedorGatewayPagamento.resolver()</span>
+            <p>
+              Primeira coisa que o service faz: confere se o gateway pedido realmente existe.
+              Só <code>stripe</code> e <code>pagseguro</code> estão implementados.
+            </p>
+            <p class="why">
+              <b>Por que logo no começo:</b> um gateway inexistente é erro do cliente, não falha
+              temporária. Se deixássemos passar, a mensagem entraria na fila, seria tentada
+              quatro vezes e acabaria na DLQ — trabalho desperdiçado para um erro que dava para
+              detectar na hora. Chamamos isso de <i>falhar rápido</i>.
+            </p>
+          </li>
+          <li data-step="3">
+            <span class="call">RepositorioPagamento.findByChaveIdempotencia()</span>
+            <p>
+              Procura se já existe um pagamento com aquela chave. Três desfechos possíveis:
+              não existe (segue em frente), existe com os mesmos dados (devolve o que já existe,
+              sem cobrar de novo), ou existe com dados diferentes (<code>409 Conflict</code>).
+            </p>
+            <p class="why">
+              <b>O terceiro caso importa:</b> se a mesma chave chega com um valor diferente, isso
+              não é uma retentativa — é um bug no cliente. Aceitar em silêncio esconderia o
+              problema; recusar deixa ele visível.
+            </p>
+          </li>
+          <li data-step="4">
+            <span class="call">repositorioPagamento.saveAndFlush() + registrarEvento()</span>
+            <p>
+              Grava o <code>Pagamento</code> com status <code>PENDENTE</code> e, na sequência, a
+              primeira linha da auditoria: <code>PAGAMENTO_SOLICITADO</code>.
+            </p>
+            <p class="why">
+              <b>Por que <code>saveAndFlush</code> e não <code>save</code>:</b> força o
+              <code>INSERT</code> a ir ao banco imediatamente, para que a violação da constraint
+              <code>UNIQUE</code> apareça aqui e possa ser tratada — é a rede de segurança para
+              duas requisições idênticas chegando no mesmo instante, que passariam as duas pelo
+              passo 3 sem se enxergar.
+            </p>
+          </li>
+          <li data-step="5">
+            <span class="call">PublicadorEventoPagamento.publicarPagamentoSolicitado()</span>
+            <p>
+              Publica um <code>MensagemPagamentoSolicitado</code> no exchange com a routing key
+              <code>payment.requested</code>. É aqui que o trabalho sai da requisição HTTP e vira
+              trabalho de fila.
+            </p>
+          </li>
+          <li data-step="6">
+            <span class="call">→ HTTP 201 Created</span>
+            <p>
+              A resposta volta com o pagamento ainda em <code>PENDENTE</code>. E está correto:
+              o pedido foi <i>aceito</i>, não <i>concluído</i>. Nada foi cobrado ainda.
+            </p>
+            <p class="why">
+              <b>É esse o contrato de uma API assíncrona:</b> ela promete que vai processar, e
+              entrega um <code>id</code> para você acompanhar. Quem consome precisa consultar
+              depois (ou receber um webhook) para saber o desfecho.
+            </p>
+          </li>
+        </ol>
+      </div>
+
+      <div class="phase">
+        <div class="phase-head">
+          <span class="phase-tag">Fase 2 · assíncrona</span>
+          <span class="phase-note">ninguém está esperando &middot; roda numa thread do listener</span>
+        </div>
+        <ol class="spine">
+          <li data-step="7">
+            <span class="call">OuvintePagamentoSolicitado.tratar()</span>
+            <p>
+              A anotação <code>@RabbitListener</code> faz o Spring entregar a mensagem a este
+              método assim que ela chega na fila. Ele busca o pagamento, muda o status para
+              <code>PROCESSANDO</code> e grava mais uma linha de auditoria.
+            </p>
+          </li>
+          <li data-step="8">
+            <span class="call">ResolvedorGatewayPagamento.resolver() → gateway.cobrar()</span>
+            <p>
+              O resolvedor devolve a implementação certa a partir do nome guardado no pagamento,
+              e o método <code>cobrar()</code> é chamado. Este é o Strategy em ação: o listener
+              não sabe — nem precisa saber — qual gateway está do outro lado.
+            </p>
+            <p class="why">
+              <b>Nos gateways simulados</b> há uma latência artificial e um sorteio: a maior parte
+              aprova, uma fatia recusa por regra de negócio, e uma fatia pequena lança
+              <code>ExcecaoGatewayPagamento</code> simulando um timeout de infraestrutura.
+            </p>
+          </li>
+          <li data-step="9">
+            <span class="call">publicarPagamentoConfirmado() / publicarPagamentoFalhou()</span>
+            <p>
+              O resultado vira outro evento na fila, em vez de ser aplicado direto. Isso simula
+              o <i>callback</i> que um gateway real enviaria de volta, e mantém a etapa "decidir
+              o desfecho" separada da etapa "chamar o provedor".
+            </p>
+          </li>
+          <li data-step="10">
+            <span class="call">OuvinteResultadoPagamento.aoConfirmar() / aoFalhar()</span>
+            <p>
+              Consome o evento de resultado, grava o status final (<code>CONFIRMADO</code> ou
+              <code>FALHOU</code>) e a última linha da auditoria — incluindo o id da transação
+              quando aprovado, ou o motivo da recusa quando não.
+            </p>
+          </li>
+        </ol>
+      </div>
+
+      <div class="callout">
+        <p class="callout-title">O desvio: quando o gateway cai de verdade</p>
+        <p>
+          Existe uma diferença importante entre <i>recusa</i> e <i>falha</i>. Cartão sem saldo é
+          uma recusa: o gateway respondeu, a resposta foi "não", e o pagamento vai para
+          <code>FALHOU</code> — tentar de novo não mudaria nada.
+        </p>
+        <p>
+          Já um timeout é uma falha: o gateway <i>não respondeu</i>. Nesse caso a
+          <code>ExcecaoGatewayPagamento</code> sobe para fora do listener, e o interceptor
+          configurado em <code>ConfiguracaoRabbitMQ</code> reprocessa a mensagem com espera
+          crescente entre as tentativas — cerca de 1s, 2s e 4s. Se as três retentativas se
+          esgotarem, a mensagem vai para a <code>payment.requested.dlq</code> em vez de
+          desaparecer, e fica lá para inspeção.
+        </p>
+      </div>
+    </section>
+
+    <section id="conceitos">
+      <h2>Os cinco conceitos-chave</h2>
+      <p>
+        Cada um resolve um problema concreto. Vale entender o problema primeiro — a solução fica
+        óbvia depois.
+      </p>
+
+      <div class="concepts">
+
+        <div class="concept">
+          <h3>1. Idempotência</h3>
+          <div class="pair">
+            <div>
+              <span>o problema</span>
+              <p>
+                O cliente clica em "pagar" duas vezes, ou a resposta se perde na rede e o app
+                reenvia. Chegam dois pedidos idênticos e a pessoa é cobrada duas vezes.
+              </p>
+            </div>
+            <div>
+              <span>a solução aqui</span>
+              <p>
+                Quem chama envia uma <code>chaveIdempotencia</code> própria. A coluna tem
+                constraint <code>UNIQUE</code> no banco, e o service consulta por ela antes de
+                criar. Mesma chave e mesmos dados devolve o pagamento original.
+              </p>
+            </div>
+          </div>
+          <p class="why">
+            A checagem em código e a constraint no banco parecem redundantes, mas não são: a
+            consulta resolve o caso normal com uma mensagem de erro clara, e a constraint cobre a
+            corrida entre duas requisições simultâneas, que o código sozinho não pega.
+          </p>
+        </div>
+
+        <div class="concept">
+          <h3>2. Strategy / Adapter nos gateways</h3>
+          <div class="pair">
+            <div>
+              <span>o problema</span>
+              <p>
+                Cada provedor cobra de um jeito. Sem cuidado, o código vira uma cadeia de
+                <code>if gateway == "stripe" ... else if ...</code> que cresce a cada integração
+                nova e espalha regras de provedor pelo sistema inteiro.
+              </p>
+            </div>
+            <div>
+              <span>a solução aqui</span>
+              <p>
+                Uma interface <code>GatewayPagamento</code> com <code>cobrar()</code>. Cada
+                provedor é uma classe que a implementa. O Spring injeta todas num
+                <code>Map&lt;String, GatewayPagamento&gt;</code> — a chave é o nome do bean — e o
+                <code>ResolvedorGatewayPagamento</code> escolhe pelo nome em tempo de execução.
+              </p>
+            </div>
+          </div>
+          <p class="why">
+            Consequência prática: adicionar um provedor novo é criar <i>uma</i> classe anotada com
+            <code>@Component("nome")</code>. Nenhum <code>if</code> em lugar nenhum precisa mudar.
+          </p>
+        </div>
+
+        <div class="concept">
+          <h3>3. Mensageria assíncrona</h3>
+          <div class="pair">
+            <div>
+              <span>o problema</span>
+              <p>
+                Se a API esperasse o gateway responder, cada requisição seguraria uma thread por
+                segundos. Um pico de tráfego derruba o serviço, e uma instabilidade do provedor
+                vira instabilidade da sua API.
+              </p>
+            </div>
+            <div>
+              <span>a solução aqui</span>
+              <p>
+                A API só grava e publica um evento — trabalho de milissegundos. Um consumidor
+                separado faz a parte lenta. Se o gateway ficar lento, as mensagens se acumulam na
+                fila; a API continua respondendo normalmente.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="concept">
+          <h3>4. Auditoria (event sourcing básico)</h3>
+          <div class="pair">
+            <div>
+              <span>o problema</span>
+              <p>
+                A tabela de pagamentos guarda só o estado atual. Quando algo dá errado, "está
+                <code>FALHOU</code>" não conta quando cada etapa aconteceu, nem o que o gateway
+                respondeu.
+              </p>
+            </div>
+            <div>
+              <span>a solução aqui</span>
+              <p>
+                Toda transição grava uma linha em <code>eventos_pagamento</code>. Essa tabela é
+                <i>append-only</i>: nada é atualizado ou apagado, só inserido. Ler as linhas de um
+                pagamento em ordem reconstrói a história inteira.
+              </p>
+            </div>
+          </div>
+          <p class="why">
+            É "básico" porque num event sourcing completo os eventos seriam a <i>única</i> fonte de
+            verdade e o estado atual seria calculado a partir deles. Aqui o status continua sendo
+            uma coluna — os eventos convivem ao lado, como trilha de auditoria.
+          </p>
+        </div>
+
+        <div class="concept">
+          <h3>5. Retry com backoff e DLQ</h3>
+          <div class="pair">
+            <div>
+              <span>o problema</span>
+              <p>
+                Falhas de rede acontecem. Desistir na primeira tentativa perde pagamentos válidos;
+                tentar em <i>loop</i> infinito trava a fila e ainda martela um serviço que já está
+                em dificuldade.
+              </p>
+            </div>
+            <div>
+              <span>a solução aqui</span>
+              <p>
+                Três retentativas com espera crescente (<i>backoff</i> exponencial): ~1s, ~2s, ~4s.
+                Esgotadas, o <code>RepublishMessageRecoverer</code> move a mensagem para a
+                dead-letter queue, onde ela fica preservada para análise.
+              </p>
+            </div>
+          </div>
+          <p class="why">
+            A espera cresce porque um serviço instável precisa de folga para se recuperar —
+            retentar de imediato costuma piorar o problema que você está tentando contornar.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+    <section id="estados">
+      <h2>Os estados de um pagamento</h2>
+      <p>
+        Quatro estados, definidos no enum <code>StatusPagamento</code>. Os dois últimos são
+        finais: um pagamento nunca sai de <code>CONFIRMADO</code> ou <code>FALHOU</code>.
+      </p>
+      <div class="states-wrap">
+        <div class="states">
+          <span class="chip pend">PENDENTE</span>
+          <span class="sep">→</span>
+          <span class="chip proc">PROCESSANDO</span>
+          <span class="sep">→</span>
+          <span class="branch">
+            <span class="chip conf">CONFIRMADO</span>
+            <span class="chip fail">FALHOU</span>
+          </span>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Estado</th><th>Quem coloca</th><th>Significa</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="verb" style="color:var(--st-pend)">PENDENTE</td>
+              <td class="cls">ServicoPagamento</td>
+              <td>Pedido aceito e gravado. Ainda está na fila, nada foi cobrado.</td>
+            </tr>
+            <tr>
+              <td class="verb" style="color:var(--st-proc)">PROCESSANDO</td>
+              <td class="cls">OuvintePagamentoSolicitado</td>
+              <td>Saiu da fila; o gateway está sendo chamado neste momento.</td>
+            </tr>
+            <tr>
+              <td class="verb" style="color:var(--st-conf)">CONFIRMADO</td>
+              <td class="cls">OuvinteResultadoPagamento</td>
+              <td>O gateway aprovou. O id da transação fica registrado na auditoria.</td>
+            </tr>
+            <tr>
+              <td class="verb" style="color:var(--st-fail)">FALHOU</td>
+              <td class="cls">OuvinteResultadoPagamento</td>
+              <td>O gateway recusou por regra de negócio. O motivo fica na auditoria.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Note que uma falha <i>de infraestrutura</i> não aparece nesta tabela: ela não muda o
+        status. O pagamento fica em <code>PROCESSANDO</code> enquanto as retentativas acontecem, e
+        continua assim se a mensagem for parar na DLQ — sinal de que precisa de intervenção humana.
+      </p>
+    </section>
+
+    <section id="classes">
+      <h2>Mapa das classes</h2>
+      <p>
+        Todas as classes do projeto, na ordem em que participam do fluxo. Use como referência
+        enquanto lê o código.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Classe</th><th>Pacote</th><th>O que faz</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="cls">ControladorPagamento</td><td>api</td><td>Expõe as três rotas HTTP e delega tudo ao service.</td></tr>
+            <tr><td class="cls">RequisicaoCriacaoPagamento</td><td>api.dto</td><td><i>Record</i> com o corpo do POST e as anotações de validação.</td></tr>
+            <tr><td class="cls">RespostaPagamento</td><td>api.dto</td><td>Formato de saída de um pagamento; converte pela fábrica <code>de()</code>.</td></tr>
+            <tr><td class="cls">RespostaEventoPagamento</td><td>api.dto</td><td>Formato de saída de uma linha de auditoria.</td></tr>
+            <tr><td class="cls">ServicoPagamento</td><td>service</td><td>Coração do sistema: idempotência, criação, consultas e publicação do evento.</td></tr>
+            <tr><td class="cls">Pagamento</td><td>domain</td><td>Entidade JPA da tabela <code>pagamentos</code>; preenche as datas via <code>@PrePersist</code>.</td></tr>
+            <tr><td class="cls">EventoPagamento</td><td>domain</td><td>Entidade da tabela <code>eventos_pagamento</code>, append-only.</td></tr>
+            <tr><td class="cls">StatusPagamento</td><td>domain</td><td>Enum dos quatro estados.</td></tr>
+            <tr><td class="cls">TipoEventoPagamento</td><td>domain</td><td>Enum dos tipos de linha de auditoria.</td></tr>
+            <tr><td class="cls">RepositorioPagamento</td><td>repository</td><td>CRUD + <code>findByChaveIdempotencia()</code>.</td></tr>
+            <tr><td class="cls">RepositorioEventoPagamento</td><td>repository</td><td>Busca os eventos de um pagamento em ordem cronológica.</td></tr>
+            <tr><td class="cls">GatewayPagamento</td><td>gateway</td><td>A interface Strategy: <code>nome()</code> e <code>cobrar()</code>.</td></tr>
+            <tr><td class="cls">GatewaySimuladoStripe</td><td>gateway</td><td>Implementação simulada registrada como <code>@Component("stripe")</code>.</td></tr>
+            <tr><td class="cls">GatewaySimuladoPagSeguro</td><td>gateway</td><td>Idem, como <code>@Component("pagseguro")</code>.</td></tr>
+            <tr><td class="cls">ResolvedorGatewayPagamento</td><td>gateway</td><td>Escolhe a implementação pelo nome; erra alto se não existir.</td></tr>
+            <tr><td class="cls">ResultadoGateway</td><td>gateway</td><td><i>Record</i> com aprovado / id da transação / mensagem.</td></tr>
+            <tr><td class="cls">ExcecaoGatewayPagamento</td><td>gateway</td><td>Falha transitória — é ela que dispara o retry.</td></tr>
+            <tr><td class="cls">ConfiguracaoRabbitMQ</td><td>messaging</td><td>Declara exchanges, filas, bindings, DLQ e a política de retry.</td></tr>
+            <tr><td class="cls">PublicadorEventoPagamento</td><td>messaging</td><td>Os três métodos de publicação de evento.</td></tr>
+            <tr><td class="cls">OuvintePagamentoSolicitado</td><td>messaging</td><td>Consome da fila e chama o gateway.</td></tr>
+            <tr><td class="cls">OuvinteResultadoPagamento</td><td>messaging</td><td>Consome o resultado e grava o status final.</td></tr>
+            <tr><td class="cls">MensagemPagamento*</td><td>messaging.event</td><td>Os três <i>records</i> que trafegam como JSON nas filas.</td></tr>
+            <tr><td class="cls">ManipuladorGlobalDeExcecoes</td><td>exception</td><td>Traduz exceções em respostas HTTP, num ponto só.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="endpoints">
+      <h2>Endpoints da API</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Método</th><th>Rota</th><th>Resposta</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="verb" style="color:var(--st-conf)">POST</td>
+              <td class="cls">/pagamentos</td>
+              <td><code>201</code> com o pagamento em <code>PENDENTE</code> · <code>400</code> se inválido · <code>409</code> se a chave conflitar</td>
+            </tr>
+            <tr>
+              <td class="verb" style="color:var(--accent)">GET</td>
+              <td class="cls">/pagamentos/{id}</td>
+              <td><code>200</code> com o estado atual · <code>404</code> se não existir</td>
+            </tr>
+            <tr>
+              <td class="verb" style="color:var(--accent)">GET</td>
+              <td class="cls">/pagamentos/{id}/eventos</td>
+              <td><code>200</code> com o histórico em ordem cronológica</td>
+            </tr>
+            <tr>
+              <td class="verb" style="color:var(--accent)">GET</td>
+              <td class="cls">/actuator/health</td>
+              <td><code>200</code> se a aplicação subiu</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Exemplo de criação</h3>
+      <pre><span class="cm"># o valor da chaveIdempotencia é escolhido por quem chama</span>
+curl -X POST http://localhost:8080/pagamentos \
+  -H "Content-Type: application/json" \
+  -d '{
+    "valor": 150.00,
+    "moeda": "BRL",
+    "gateway": "stripe",
+    "chaveIdempotencia": "pedido-123"
+  }'</pre>
+      <h3>O histórico depois de alguns segundos</h3>
+      <pre>GET /pagamentos/{id}/eventos
+
+[
+  { "tipoEvento": "PAGAMENTO_SOLICITADO",  "detalhes": "Pagamento criado com status PENDENTE" },
+  { "tipoEvento": "PAGAMENTO_PROCESSANDO", "detalhes": "Enviando para o gateway 'stripe'" },
+  { "tipoEvento": "PAGAMENTO_CONFIRMADO",  "detalhes": "idTransacao=85676e40-...; Aprovado pelo Stripe (simulado)" }
+]</pre>
+    </section>
+
+    <section id="rodar">
+      <h2>Como rodar</h2>
+      <p>
+        São dois passos: subir as dependências em container e depois a aplicação. O banco e a
+        fila precisam estar de pé antes.
+      </p>
+      <pre><span class="cm"># 1. Postgres + RabbitMQ</span>
+docker compose up -d
+
+<span class="cm"># 2. a aplicação (porta 8080)</span>
+./mvnw spring-boot:run
+
+<span class="cm"># 3. conferir</span>
+curl http://localhost:8080/actuator/health</pre>
+      <p>
+        O painel do RabbitMQ fica em <code>localhost:15672</code> (<code>guest</code>/<code>guest</code>)
+        — é o melhor lugar para ver as filas enchendo e esvaziando enquanto você testa, e para
+        inspecionar o que caiu na DLQ.
+      </p>
+      <div class="callout">
+        <p class="callout-title">Para encerrar no fim do dia</p>
+        <p>
+          Pare a aplicação com <kbd>Ctrl+C</kbd> e depois rode <code>docker compose stop</code>.
+          Use <code>stop</code>, não <code>down</code>: os containers ficam desligados mas
+          preservados, e no dia seguinte <code>docker compose start</code> já traz tudo de volta
+          com os dados intactos.
+        </p>
+      </div>
+    </section>
+
+    <section id="glossario">
+      <h2>Glossário</h2>
+      <p>
+        Os termos que aparecem no código e que costumam travar a leitura na primeira vez.
+      </p>
+      <div class="glossary">
+        <div><b>Idempotência</b><p>Propriedade de uma operação que pode ser repetida sem mudar o resultado. Executar uma vez ou cinco vezes dá no mesmo.</p></div>
+        <div><b>DTO</b><p><i>Data Transfer Object</i>. Objeto que existe só para carregar dados entre camadas — aqui, entre HTTP e o service. Mantém o formato da API independente do formato do banco.</p></div>
+        <div><b>Record</b><p>Recurso do Java para classes imutáveis de dados. Uma linha define campos, construtor, <code>equals</code> e <code>getters</code>. Ideal para DTOs e mensagens.</p></div>
+        <div><b>Entidade / JPA</b><p>Classe anotada com <code>@Entity</code> que o Hibernate mapeia para uma tabela. Você mexe no objeto; ele gera o SQL.</p></div>
+        <div><b>Repository</b><p>Interface do Spring Data. Você declara o método com um nome padronizado e a implementação é gerada — <code>findByChaveIdempotencia</code> vira um <code>WHERE chave_idempotencia = ?</code>.</p></div>
+        <div><b>Exchange</b><p>No RabbitMQ, o ponto onde se publica. Ele roteia a mensagem para as filas de acordo com a routing key. Quem publica nunca escolhe a fila diretamente.</p></div>
+        <div><b>Routing key</b><p>O rótulo da mensagem (ex.: <code>payment.confirmed</code>) que o exchange usa para decidir o destino.</p></div>
+        <div><b>Queue</b><p>A fila onde a mensagem espera até um consumidor pegá-la.</p></div>
+        <div><b>DLQ</b><p><i>Dead-letter queue</i>. Fila para onde vão as mensagens que falharam repetidamente. Guarda o problema em vez de descartá-lo.</p></div>
+        <div><b>Backoff exponencial</b><p>Estratégia de retentativa em que a espera dobra a cada tentativa (1s, 2s, 4s), dando folga a um serviço instável.</p></div>
+        <div><b>AMQP</b><p>O protocolo que o RabbitMQ implementa. É de onde vem todo esse vocabulário.</p></div>
+        <div><b>Constraint UNIQUE</b><p>Regra do banco que impede dois registros com o mesmo valor numa coluna. Aqui é o que garante idempotência mesmo sob concorrência.</p></div>
+        <div><b>Strategy</b><p>Padrão de projeto: várias implementações da mesma interface, escolhidas em tempo de execução. É o que permite trocar de gateway sem <code>if</code>.</p></div>
+        <div><b>Actuator</b><p>Módulo do Spring Boot que expõe endpoints de diagnóstico, como <code>/actuator/health</code>.</p></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer class="colophon">
+  <div>
+    <span>com.glrtech · payment-processor</span>
+    <span>gateways simulados — nenhuma cobrança real</span>
+    <span>guia de leitura do código</span>
+  </div>
+</footer>
